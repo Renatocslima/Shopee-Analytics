@@ -30,7 +30,7 @@ with aba_mensal:
     col2.metric("Ticket Médio por Venda", f"R$ {ticket_medio:,.2f}")
 
     # Top Produtos
-    top_produtos = df_filtrado.groupby('Nome do Produto')['Quantidade'].sum().sort_values(ascending=False).head(5).reset_index()
+    top_produtos = df_filtrado.groupby('Nome do Produto')['Quantidade'].sum().sort_values(ascending=True).head(5).reset_index()
     fig_prod = px.bar(top_produtos, x='Quantidade', y='Nome do Produto', orientation='h', title='Top 5 Produtos')
     st.plotly_chart(fig_prod, use_container_width=True)
 
