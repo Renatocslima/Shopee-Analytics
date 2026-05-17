@@ -100,7 +100,7 @@ def renderizar_painel(df_escopo, coluna_agrupamento, label_eixo_x, chave_unica):
             )
 
     # Força o Plotly a usar o padrão brasileiro de separadores (, para decimal e . para milhar)
-    fig_tempo.update_layout(separators=',.', use_container_width=True)
+    fig_tempo.update_layout(separators=',.')
     st.plotly_chart(fig_tempo, use_container_width=True, key=f"graf_tempo_{chave_unica}")
 
     # 3. Top 5 Produtos (Apenas Vendas Concluídas)
