@@ -1,13 +1,11 @@
 import streamlit as st
 import streamlit_authenticator as stauth
 from streamlit_gsheets import GSheetsConnection
-import pandas as pd
-import plotly.express as px
 
-# Configuração da página
-st.set_page_config(page_title="Dashboard Shopee Analytics", layout="wide")
+# 1. Configuração Inicial do Dashboard
+st.set_page_config(page_title="Shopee Analytics MVP", layout="wide")
 
-# 1. Conexão com o Google Sheets (Base de Usuários)
+# 2. Conexão Base de Usuários (Google Sheets)
 try:
     conn = st.connection("gsheets", type=GSheetsConnection)
     df_usuarios = conn.read()
@@ -20,10 +18,10 @@ try:
             "email": row['email']
         }
 except Exception as e:
-    st.error(f"Erro ao conectar à base de usuários: {e}")
+    st.error(f"Erro de conexão com o banco de usuários: {e}")
     st.stop()
 
-# 2. Configuração do Autenticador (Versão Atualizada)
+# 3. Inicialização do Autenticador
 authenticator = stauth.Authenticate(
     credentials=credentials,
     cookie_name="shopee_dashboard_cookie",
@@ -31,75 +29,33 @@ authenticator = stauth.Authenticate(
     cookie_expiry_days=30
 )
 
-# 3. Renderiza a tela de login
+# Renderiza Tela de Login
 authenticator.login()
 
-# 4. Controle de Acesso via Session State
+# 4. Estrutura de Navegação Multi-Páginas se Estiver Logado
 if st.session_state.get("authentication_status"):
-    authenticator.logout("Sair", "sidebar")
-    st.title(f"📊 Dashboard de Vendas — Bem-vindo, {st.session_state.get('name')}")
     
-    # --- ÁREA DE UPLOAD DO ARQUIVO SHOPEE ---
-    st.markdown("### Envie o relatório da Shopee")
-    uploaded_file = st.file_uploader("Selecione o arquivo .xlsx gerado na Central do Vendedor", type="xlsx")
+    # Criando os links para os arquivos das subpastas
+    pg_visao_geral = st.Page("views/1_visao_geral.py", title="Visão Geral", icon="📊", default=True)
+    pg_detalhes = st.Page("views/2_detalhamento.py", title="Análise Temporal", icon="📅")
+    pg_config = st.Page("views/3_configuracoes.py", title="Configurações de Conta", icon="⚙️")
+    pg_feedback = st.Page("views/4_feedback.py", title="Enviar Feedback", icon="💬")
+
+    # Inicializa o menu dinâmico na lateral esquerda organizando por seções
+    navegacao = st.navigation(
+        {
+            "Dashboards": [pg_visao_geral, pg_detalhes],
+            "Gerenciamento": [pg_config, pg_feedback]
+        }
+    )
     
-    if uploaded_file:
-        try:
-            df = pd.read_excel(uploaded_file)
-            st.success("Arquivo carregado com sucesso!")
-            
-            # --- TRATAMENTO DE DADOS ---
-            # Converte a coluna de data
-            df['Data de criação do pedido'] = pd.to_datetime(df['Data de criação do pedido'], errors='coerce')
-            
-            # Função robusta para limpar valores financeiros
-            def limpar_moeda(valor):
-                if isinstance(valor, str):
-                    # Remove R$, espaços, pontos de milhar e troca vírgula por ponto
-                    valor = valor.replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.')
-                try:
-                    return float(valor)
-                except ValueError:
-                    return 0.0
+    # Botão de Logout fixo no topo da barra lateral esquerda
+    authenticator.logout("Desconectar do Painel", "sidebar")
+    
+    # Executa a visualização do arquivo selecionado no menu
+    navegacao.run()
 
-            # Aplica a limpeza na coluna
-            df['Valor Total'] = df['Valor Total'].apply(limpar_moeda)
-            
-            # Limpa e converte a coluna de Valor Total (remove R$, pontos e ajusta vírgula)
-            if df['Valor Total'].dtype == 'object':
-                df['Valor Total'] = df['Valor Total'].astype(str).str.replace('R$', '', regex=False).str.replace('.', '', regex=False).str.replace(',', '.').astype(float)
-            
-            # --- KPIs PRINCIPAIS ---
-            st.markdown("### 2. Resumo da Operação")
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Faturamento Bruto", f"R$ {df['Valor Total'].sum():,.2f}")
-            col2.metric("Total de Pedidos", df['ID do pedido'].nunique())
-            col3.metric("Itens Vendidos", df['Quantidade'].sum())
-            
-            # --- GRÁFICOS ---
-            st.markdown("### 3. Análises Detalhadas")
-            
-            # Gráfico 1: Vendas por Dia
-            vendas_dia = df.groupby(df['Data de criação do pedido'].dt.date)['Valor Total'].sum().reset_index()
-            fig_dia = px.line(vendas_dia, x='Data de criação do pedido', y='Valor Total', title='Faturamento por Dia')
-            st.plotly_chart(fig_dia, use_container_width=True)
-            
-            col_graf1, col_graf2 = st.columns(2)
-            
-            # Gráfico 2: Top Produtos
-            top_produtos = df.groupby('Nome do Produto')['Quantidade'].sum().sort_values(ascending=False).head(5).reset_index()
-            fig_prod = px.bar(top_produtos, x='Quantidade', y='Nome do Produto', orientation='h', title='Top 5 Produtos mais Vendidos')
-            fig_prod.update_layout(yaxis={'categoryorder':'total ascending'})
-            col_graf1.plotly_chart(fig_prod, use_container_width=True)
-            
-            # Gráfico 3: Status dos Pedidos
-            fig_status = px.pie(df, names='Status do pedido', title='Distribuição por Status')
-            col_graf2.plotly_chart(fig_status, use_container_width=True)
-
-        except Exception as e:
-            st.error(f"Erro ao processar o arquivo Excel: {e}")
-            
 elif st.session_state.get("authentication_status") is False:
-    st.error("Usuário ou senha incorretos")
+    st.error("Usuário ou senha incorretos.")
 elif st.session_state.get("authentication_status") is None:
-    st.warning("Por favor, insira seu usuário e senha")
+    st.warning("Por favor, insira suas credenciais de acesso.")
