@@ -8,7 +8,7 @@ st.set_page_config(page_title="Shopee Analytics MVP", layout="wide")
 # 2. Conexão Base de Usuários (Google Sheets)
 try:
     conn = st.connection("gsheets", type=GSheetsConnection)
-    df_usuarios = conn.read()
+    df_usuarios = conn.read(worksheet="Usuarios")
     
     credentials = {"usernames": {}}
     for _, row in df_usuarios.iterrows():
