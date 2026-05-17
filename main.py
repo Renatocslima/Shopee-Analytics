@@ -31,16 +31,18 @@ authenticator = stauth.Authenticate(
     cookie_expiry_days=30
 )
 
-# Versão atualizada para a nova versão do streamlit-authenticator
-name, authentication_status, username = authenticator.login(
-    title="Login", 
-    location="main"
-)
+# 4. Renderiza a tela de login (Agora a função não retorna mais 3 variáveis)
+authenticator.login(title="Login", location="main")
+
+# Recupera o status e os dados direto do st.session_state ou do objeto
+authentication_status = st.session_state.get("authentication_status")
+name = st.session_state.get("name")
+username = st.session_state.get("username")
 
 if authentication_status:
     authenticator.logout("Sair", "sidebar")
     st.title(f"📊 Dashboard de Vendas — Bem-vindo, {name}")
-    
+       
     # --- ÁREA DE UPLOAD DO ARQUIVO SHOPEE ---
     st.markdown("### 1. Envie o relatório da Shopee")
     uploaded_file = st.file_uploader("Arraste ou selecione o arquivo .xlsx gerado na Central do Vendedor", type="xlsx")
