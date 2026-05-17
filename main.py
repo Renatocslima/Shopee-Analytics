@@ -31,9 +31,12 @@ authenticator = stauth.Authenticate(
 authenticator.login()
 
 if st.session_state.get("authentication_status"):
+    
+    # ADICIONE ESTA LINHA AQUI PARA EXIBIR O NOME:
+    st.markdown(f"### 👋 Seja bem-vindo, {st.session_state['name']}!")
+    
     pg_visao_geral = st.Page("views/1_visao_geral.py", title="Visão Geral", icon="📊", default=True)
     pg_detalhes = st.Page("views/2_detalhamento.py", title="Análise Temporal", icon="📅")
-    pg_configuracoes = st.Page("views/3_configuracoes.py", title="Configurações", icon="⚙️")
     pg_feedback = st.Page("views/4_feedback.py", title="Enviar Feedback", icon="💬")
 
     navegacao = st.navigation({
@@ -43,7 +46,3 @@ if st.session_state.get("authentication_status"):
     
     authenticator.logout("Desconectar do Painel", "sidebar")
     navegacao.run()
-elif st.session_state.get("authentication_status") is False:
-    st.error("Usuário ou senha incorretos.")
-elif st.session_state.get("authentication_status") is None:
-    st.warning("Por favor, insira suas credenciais de acesso.")

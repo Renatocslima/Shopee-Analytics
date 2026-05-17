@@ -23,7 +23,7 @@ with st.form("form_feedback", clear_on_submit=True):
                         "title": f"📝 Novo Feedback - {tipo}",
                         "color": 15418782, # Cor personalizada
                         "fields": [
-                            {"name": "👤 Usuário", "value": f"`{st.session_state.get('usuario_atual', 'Desconhecido')}`", "inline": True},
+                            {"name": "👤 Usuário", "value": f"`{st.session_state.get('username', 'Desconhecido')}`", "inline": True},
                             {"name": "📅 Data", "value": datetime.now().strftime("%d/%m/%Y %H:%M"), "inline": True},
                             {"name": "💬 Mensagem", "value": mensagem, "inline": False}
                         ]
