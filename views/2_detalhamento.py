@@ -49,14 +49,14 @@ if df_filtrado.empty:
     st.stop()
 
 # --- FUNÇÃO MESTRA DE RENDERIZAÇÃO (REUTILIZADA NAS 3 ABAS) ---
-# Adicionamos o parâmetro 'chave_unica'
+import numpy as np  # Certifique-se de ter essa importação no topo do arquivo
+
 def renderizar_painel(df_escopo, coluna_agrupamento, label_eixo_x, chave_unica):
-    # 1. KPIs
+    # 1. KPIs (Mantém igual)
     faturamento_bruto = df_escopo['Valor Total'].sum()
     vendas_reais = df_escopo[df_escopo['Status do pedido'] == 'Concluído']['Valor Total'].sum()
     vendas_perdidas = df_escopo[df_escopo['Status do pedido'] == 'Cancelado']['Valor Total'].sum()
     vendas_aguardando = df_escopo[df_escopo['Status do pedido'].isin(['A enviar', 'Processando', 'Pendente'])]['Valor Total'].sum()
-    
     indice_sucesso = (vendas_reais / faturamento_bruto * 100) if faturamento_bruto > 0 else 0
     numero_pedidos = df_escopo['ID do pedido'].nunique()
 
@@ -75,13 +75,32 @@ def renderizar_painel(df_escopo, coluna_agrupamento, label_eixo_x, chave_unica):
         title=f'Faturamento por {label_eixo_x} e Status',
         labels={'Valor Total': 'Faturamento (R$)', coluna_agrupamento: label_eixo_x, 'Status do pedido': 'Status'},
         barmode='stack',
-        color_discrete_map=CORES_STATUS,
-        trendline="ols",            # Adiciona a linha de tendência matemática
-        trendline_scope="overall"   # Garante que seja uma linha única do total, não uma por status
+        color_discrete_map=CORES_STATUS 
     )
-    
-    # Adicionando o 'key' exclusivo para não dar erro de ID duplicado
+
+    # --- CÁLCULO DA LINHA DE TENDÊNCIA MANUAL (À prova de falhas) ---
+    vendas_totais = df_escopo.groupby(coluna_agrupamento)['Valor Total'].sum().reset_index()
+    if len(vendas_totais) > 1:
+        x_numerico = np.arange(len(vendas_totais))
+        y_numerico = vendas_totais['Valor Total'].values
+        
+        # Remove NaNs se existirem
+        idx = np.isfinite(y_numerico)
+        if idx.any():
+            m, b = np.polyfit(x_numerico[idx], y_numerico[idx], 1)
+            linha_tendencia = m * x_numerico + b
+            
+            # Adiciona a linha de tendência tracejada por cima das barras
+            fig_tempo.add_scatter(
+                x=vendas_totais[coluna_agrupamento], 
+                y=linha_tendencia, 
+                mode='lines', 
+                name='Tendência Geral',
+                line=dict(color='#ffffff', dash='dash', width=3) # Linha branca tracejada
+            )
+
     st.plotly_chart(fig_tempo, use_container_width=True, key=f"graf_tempo_{chave_unica}")
+
 
     # 3. Top 5 Produtos (Apenas Vendas Concluídas)
     st.markdown("### Top 5 Produtos mais Entregues (Apenas Concluídos)")
