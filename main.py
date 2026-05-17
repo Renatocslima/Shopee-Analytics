@@ -31,7 +31,11 @@ authenticator = stauth.Authenticate(
     cookie_expiry_days=30
 )
 
-name, authentication_status, username = authenticator.login("Login", "main")
+# Versão atualizada para a nova versão do streamlit-authenticator
+name, authentication_status, username = authenticator.login(
+    title="Login", 
+    location="main"
+)
 
 if authentication_status:
     authenticator.logout("Sair", "sidebar")
