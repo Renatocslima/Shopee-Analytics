@@ -52,6 +52,19 @@ if st.session_state.get("authentication_status"):
             # Converte a coluna de data
             df['Data de criação do pedido'] = pd.to_datetime(df['Data de criação do pedido'], errors='coerce')
             
+            # Função robusta para limpar valores financeiros
+            def limpar_moeda(valor):
+                if isinstance(valor, str):
+                    # Remove R$, espaços, pontos de milhar e troca vírgula por ponto
+                    valor = valor.replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.')
+                try:
+                    return float(valor)
+                except ValueError:
+                    return 0.0
+
+            # Aplica a limpeza na coluna
+            df['Valor Total'] = df['Valor Total'].apply(limpar_moeda)
+            
             # Limpa e converte a coluna de Valor Total (remove R$, pontos e ajusta vírgula)
             if df['Valor Total'].dtype == 'object':
                 df['Valor Total'] = df['Valor Total'].astype(str).str.replace('R$', '', regex=False).str.replace('.', '', regex=False).str.replace(',', '.').astype(float)
