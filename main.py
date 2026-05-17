@@ -28,22 +28,31 @@ authenticator = stauth.Authenticate(
     cookie_expiry_days=30
 )
 
+# 3. Renderiza a interface de Login
 authenticator.login()
 
+# --- VERIFICAÇÃO DO STATUS DE AUTENTICAÇÃO ---
+
+# Caso 1: Usuário logado com sucesso
 if st.session_state.get("authentication_status"):
-    
-    # ADICIONE ESTA LINHA AQUI PARA EXIBIR O NOME:
     st.markdown(f"### 👋 Seja bem-vindo, {st.session_state['name']}!")
     
     pg_visao_geral = st.Page("views/1_visao_geral.py", title="Visão Geral", icon="📊", default=True)
     pg_detalhes = st.Page("views/2_detalhamento.py", title="Análise Temporal", icon="📅")
-    pg_config = st.Page("views/3_configuracoes.py", title="Configurações", icon="⚙️")
     pg_feedback = st.Page("views/4_feedback.py", title="Enviar Feedback", icon="💬")
 
     navegacao = st.navigation({
         "Dashboards": [pg_visao_geral, pg_detalhes],
-        "Suporte": [pg_feedback,pg_config]
+        "Suporte": [pg_feedback]
     })
     
     authenticator.logout("Desconectar do Painel", "sidebar")
     navegacao.run()
+
+# Caso 2: Senha ou usuário incorretos
+elif st.session_state.get("authentication_status") is False:
+    st.error("❌ Usuário ou senha incorretos. Por favor, tente novamente.")
+
+# Caso 3: Tela inicial aguardando dados
+elif st.session_state.get("authentication_status") is None:
+    st.warning("Por favor, insira suas credenciais de acesso para entrar no painel.")

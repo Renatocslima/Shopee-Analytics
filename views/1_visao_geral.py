@@ -2,9 +2,9 @@ import streamlit as st
 from utils.data_loader import processar_dataframe_shopee
 import plotly.express as px
 
-st.title("📊 Visão Geral da Operação")
+st.title("Visão Geral da Operação")
 
-st.markdown("### 1. Envie o relatório da Shopee")
+st.markdown("### Envie o relatório da Shopee")
 uploaded_file = st.file_uploader("Selecione o arquivo .xlsx gerado na Central do Vendedor", type="xlsx")
 
 if uploaded_file is not None:
