@@ -23,7 +23,7 @@ def carregar_usuarios():
         conn = st.connection("gsheets", type=GSheetsConnection)
         
         # Lemos a aba 'Usuarios' zerando o TTL (Time-To-Live) para ignorar o cache local
-        df = conn.read(worksheet="Usuarios", ttl=0)
+        df = conn.read(worksheet=0)
         
         # Limpeza preventiva de dados: remove linhas vazias e espaços invisíveis
         df = df.dropna(subset=["usuario", "senha"])
