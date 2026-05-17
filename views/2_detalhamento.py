@@ -5,10 +5,10 @@ import pandas as pd
 # === VARIÁVEIS DE CORES (FÁCIL EDIÇÃO) ===
 # Altere os códigos Hex para mudar as cores dos gráficos em todas as telas
 CORES_STATUS = {
-    "Concluído": "#2ecc71",    # Verde
+    "Processando": "#2ecc71",    # Verde
     "Cancelado": "#e74c3c",    # Vermelho
     "A enviar": "#f39c12",     # Laranja
-    "Processando": "#3498db",  # Azul
+    "Concluído": "#3498db",  # Azul
     "Pendente": "#95a5a6"      # Cinza
 }
 
