@@ -12,7 +12,7 @@ df = st.session_state["dados_shopee"].copy()
 
 # --- EXTRAÇÃO DE COLUNAS DE TEMPO COMPLEMENTARES ---
 df['Ano'] = df['Data de criação do pedido'].dt.year
-df['Nome_Mes'] = df['Data de criação do pedido'].dt.strftime('%m - %B') # Ex: 05 - May
+df['Nome_Mes'] = df['Data de criação do pedido'].dt.strftime('%m - %B')
 df['Data_Dia'] = df['Data de criação do pedido'].dt.date
 df['Trimestre'] = df['Data de criação do pedido'].dt.to_period('Q').astype(str)
 
@@ -24,13 +24,19 @@ anos_disponiveis = sorted(df['Ano'].unique())
 anos_selecionados = st.sidebar.multiselect("Selecione o Ano", options=anos_disponiveis, default=anos_disponiveis)
 df_filtrado = df[df['Ano'].isin(anos_selecionados)]
 
-# 2. Filtro de Mês (Baseado no ano escolhido acima)
+# 2. Filtro de Mês
 meses_disponiveis = sorted(df_filtrado['Nome_Mes'].unique())
 meses_selecionados = st.sidebar.multiselect("Selecione o Mês", options=meses_disponiveis, default=meses_disponiveis)
 df_filtrado = df_filtrado[df_filtrado['Nome_Mes'].isin(meses_selecionados)]
 
-# 3. Filtro Regional por Estado
+# 3. Filtro de Status do Pedido (Novo)
 st.sidebar.markdown("---")
+st.sidebar.header("Filtros de Operação")
+status_disponiveis = sorted(df_filtrado['Status do pedido'].unique())
+status_selecionados = st.sidebar.multiselect("Status do Pedido", options=status_disponiveis, default=status_disponiveis)
+df_filtrado = df_filtrado[df_filtrado['Status do pedido'].isin(status_selecionados)]
+
+# 4. Filtro Regional por Estado
 ufs_selecionadas = st.sidebar.multiselect("Estados (UF)", options=sorted(df_filtrado["UF"].unique()), default=df_filtrado["UF"].unique())
 df_filtrado = df_filtrado[df_filtrado["UF"].isin(ufs_selecionadas)]
 
@@ -39,13 +45,13 @@ if df_filtrado.empty:
     st.stop()
 
 # --- SISTEMA DE ABAS ---
-aba_mensal, aba_trimestral, aba_anual = st.tabs(["📉 Visão Diária/Mensal", "📊 Visão Trimestral", "2026 Visão Anual"])
+aba_mensal, aba_trimestral, aba_anual = st.tabs(["📉 Visão Diária/Mensal", "📊 Visão Trimestral", "📆 Visão Anual"])
 
-# 1. ABA MENSAL (AGORA COM FOCO EM VENDAS DIÁRIAS)
+# 1. ABA MENSAL
 with aba_mensal:
     st.subheader("Performance Evolutiva por Dia")
     
-    # 1.1 KPIs do intervalo selecionado nos filtros
+    # 1.1 KPIs do intervalo selecionado
     col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
     faturamento_mensal = df_filtrado['Valor Total'].sum()
     ticket_medio_m = faturamento_mensal / len(df_filtrado) if len(df_filtrado) > 0 else 0
@@ -57,7 +63,7 @@ with aba_mensal:
     
     st.divider()
     
-    # 1.2 Gráfico Principal: Vendas por Dia baseado no mês/ano filtrado
+    # 1.2 Gráfico Principal: Vendas por Dia
     vendas_por_dia = df_filtrado.groupby('Data_Dia')['Valor Total'].sum().reset_index()
     fig_dia = px.bar(
         vendas_por_dia, x='Data_Dia', y='Valor Total', 
@@ -68,8 +74,37 @@ with aba_mensal:
     st.plotly_chart(fig_dia, use_container_width=True)
     
     st.divider()
+
+    # 1.3 VISUAIS DIVIDIDOS POR STATUS (Novo)
+    st.subheader("Análise de Pedidos por Status")
+    col_st1, col_st2 = st.columns(2)
     
-    # 1.3 Top 5 Produtos
+    with col_st1:
+        # Gráfico de Pizza: Volume de Pedidos por Status
+        fig_pizza_status = px.pie(
+            df_filtrado, 
+            names='Status do pedido', 
+            title='Distribuição por Volume de Pedidos'
+        )
+        st.plotly_chart(fig_pizza_status, use_container_width=True)
+        
+    with col_st2:
+        # Gráfico de Barras: Faturamento por Status
+        faturamento_status = df_filtrado.groupby('Status do pedido')['Valor Total'].sum().reset_index()
+        fig_barra_status = px.bar(
+            faturamento_status, 
+            x='Status do pedido', 
+            y='Valor Total', 
+            title='Faturamento por Status (R$)',
+            labels={'Valor Total': 'Total (R$)', 'Status do pedido': 'Status'},
+            color='Status do pedido',
+            text_auto='.2f'
+        )
+        st.plotly_chart(fig_barra_status, use_container_width=True)
+
+    st.divider()
+    
+    # 1.4 Top 5 Produtos
     col_g1, col_g2 = st.columns(2)
     with col_g1:
         top_qtd = df_filtrado.groupby('Nome do Produto')['Quantidade'].sum().sort_values(ascending=False).head(5).reset_index()
