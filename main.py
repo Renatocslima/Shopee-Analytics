@@ -39,11 +39,12 @@ if st.session_state.get("authentication_status"):
     
     pg_visao_geral = st.Page("views/1_visao_geral.py", title="Visão Geral", icon="📊", default=True)
     pg_detalhes = st.Page("views/2_detalhamento.py", title="Análise Temporal", icon="📅")
+    pg_config = st.Page("views/3_configuracoes.py", title="Configurações", icon="⚙️")
     pg_feedback = st.Page("views/4_feedback.py", title="Enviar Feedback", icon="💬")
 
     navegacao = st.navigation({
         "Dashboards": [pg_visao_geral, pg_detalhes],
-        "Suporte": [pg_feedback]
+        "Suporte": [pg_feedback,pg_config]
     })
     
     authenticator.logout("Desconectar do Painel", "sidebar")
