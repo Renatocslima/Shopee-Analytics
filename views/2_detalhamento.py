@@ -52,20 +52,26 @@ if df_filtrado.empty:
 import numpy as np  # Certifique-se de ter essa importação no topo do arquivo
 
 def renderizar_painel(df_escopo, coluna_agrupamento, label_eixo_x, chave_unica):
-    # 1. KPIs (Mantém igual)
+    # --- FUNÇÕES AUXILIARES DE FORMATAÇÃO PT-BR ---
+    fmt_moeda = lambda v: f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    fmt_pct = lambda v: f"{v:.1f}%".replace(".", ",")
+    fmt_int = lambda v: f"{v:,}".replace(",", ".")
+
+    # 1. KPIs com formatação BR
     faturamento_bruto = df_escopo['Valor Total'].sum()
     vendas_reais = df_escopo[df_escopo['Status do pedido'] == 'Concluído']['Valor Total'].sum()
     vendas_perdidas = df_escopo[df_escopo['Status do pedido'] == 'Cancelado']['Valor Total'].sum()
     vendas_aguardando = df_escopo[df_escopo['Status do pedido'].isin(['A enviar', 'Processando', 'Pendente'])]['Valor Total'].sum()
+    
     indice_sucesso = (vendas_reais / faturamento_bruto * 100) if faturamento_bruto > 0 else 0
     numero_pedidos = df_escopo['ID do pedido'].nunique()
 
     col1, col2, col3, col4, col5 = st.columns(5)
-    col1.metric("💰 Real (Concluído)", f"R$ {vendas_reais:,.2f}")
-    col2.metric("❌ Perdido", f"R$ {vendas_perdidas:,.2f}")
-    col3.metric("⏳ Aguardando", f"R$ {vendas_aguardando:,.2f}")
-    col4.metric("🏆 Sucesso", f"{indice_sucesso:.1f}%")
-    col5.metric("📦 Pedidos", f"{numero_pedidos}")
+    col1.metric("💰 Real (Concluído)", fmt_moeda(vendas_reais))
+    col2.metric("❌ Perdido", fmt_moeda(vendas_perdidas))
+    col3.metric("⏳ Aguardando", fmt_moeda(vendas_aguardando))
+    col4.metric("🏆 Sucesso", fmt_pct(indice_sucesso))
+    col5.metric("📦 Pedidos", fmt_int(numero_pedidos))
     st.divider()
 
     # 2. Gráfico Principal Empilhado por Status
@@ -78,29 +84,24 @@ def renderizar_painel(df_escopo, coluna_agrupamento, label_eixo_x, chave_unica):
         color_discrete_map=CORES_STATUS 
     )
 
-    # --- CÁLCULO DA LINHA DE TENDÊNCIA MANUAL (À prova de falhas) ---
+    # --- TENDÊNCIA ---
     vendas_totais = df_escopo.groupby(coluna_agrupamento)['Valor Total'].sum().reset_index()
     if len(vendas_totais) > 1:
         x_numerico = np.arange(len(vendas_totais))
         y_numerico = vendas_totais['Valor Total'].values
-        
-        # Remove NaNs se existirem
         idx = np.isfinite(y_numerico)
         if idx.any():
             m, b = np.polyfit(x_numerico[idx], y_numerico[idx], 1)
             linha_tendencia = m * x_numerico + b
-            
-            # Adiciona a linha de tendência tracejada por cima das barras
             fig_tempo.add_scatter(
-                x=vendas_totais[coluna_agrupamento], 
-                y=linha_tendencia, 
-                mode='lines', 
-                name='Tendência Geral',
-                line=dict(color='#ffffff', dash='dash', width=3) # Linha branca tracejada
+                x=vendas_totais[coluna_agrupamento], y=linha_tendencia, 
+                mode='lines', name='Tendência Geral',
+                line=dict(color='#ffffff', dash='dash', width=3)
             )
 
+    # Força o Plotly a usar o padrão brasileiro de separadores (, para decimal e . para milhar)
+    fig_tempo.update_layout(separators=',.', use_container_width=True)
     st.plotly_chart(fig_tempo, use_container_width=True, key=f"graf_tempo_{chave_unica}")
-
 
     # 3. Top 5 Produtos (Apenas Vendas Concluídas)
     st.markdown("### Top 5 Produtos mais Entregues (Apenas Concluídos)")
@@ -115,17 +116,13 @@ def renderizar_painel(df_escopo, coluna_agrupamento, label_eixo_x, chave_unica):
         with col_g1:
             top_qtd = df_concluidos.groupby('Nome do Produto')['Quantidade'].sum().sort_values(ascending=False).head(5).reset_index()
             fig_qtd = px.bar(top_qtd, x='Quantidade', y='Nome do Produto', orientation='h', title='Volume por Quantidade', color_discrete_sequence=[cor_concluido])
-            fig_qtd.update_layout(yaxis={'categoryorder':'total ascending'})
-            
-            # Adicionando o 'key' exclusivo
+            fig_qtd.update_layout(yaxis={'categoryorder':'total ascending'}, separators=',.') # Padrão BR aqui também
             st.plotly_chart(fig_qtd, use_container_width=True, key=f"graf_qtd_{chave_unica}")
             
         with col_g2:
             top_valor = df_concluidos.groupby('Nome do Produto')['Valor Total'].sum().sort_values(ascending=False).head(5).reset_index()
             fig_val = px.bar(top_valor, x='Valor Total', y='Nome do Produto', orientation='h', title='Volume por Faturamento (R$)', color_discrete_sequence=[cor_concluido])
-            fig_val.update_layout(yaxis={'categoryorder':'total ascending'})
-            
-            # Adicionando o 'key' exclusivo
+            fig_val.update_layout(yaxis={'categoryorder':'total ascending'}, separators=',.') # Padrão BR aqui também
             st.plotly_chart(fig_val, use_container_width=True, key=f"graf_val_{chave_unica}")
 
 # --- SISTEMA DE ABAS ---
