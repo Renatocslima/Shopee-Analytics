@@ -75,8 +75,11 @@ def renderizar_painel(df_escopo, coluna_agrupamento, label_eixo_x, chave_unica):
         title=f'Faturamento por {label_eixo_x} e Status',
         labels={'Valor Total': 'Faturamento (R$)', coluna_agrupamento: label_eixo_x, 'Status do pedido': 'Status'},
         barmode='stack',
-        color_discrete_map=CORES_STATUS 
+        color_discrete_map=CORES_STATUS,
+        trendline="ols",            # Adiciona a linha de tendência matemática
+        trendline_scope="overall"   # Garante que seja uma linha única do total, não uma por status
     )
+    
     # Adicionando o 'key' exclusivo para não dar erro de ID duplicado
     st.plotly_chart(fig_tempo, use_container_width=True, key=f"graf_tempo_{chave_unica}")
 
